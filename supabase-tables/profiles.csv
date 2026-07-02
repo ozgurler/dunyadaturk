@@ -1,0 +1,4 @@
+id,username,email,role,banned,created_at
+gen_random_uuid(),admin,admin@dunyadaturk.com,admin,false,2025-01-01 00:00:00+00
+gen_random_uuid(),mehmet_k,mehmet@example.com,user,false,2025-03-15 00:00:00+00
+gen_random_uuid(),ayse_d,ayse@example.com,user,false,2025-05-20 00:00:00+00

@@ -1,0 +1,6 @@
+id,topic_id,author_id,content,created_at
+gen_random_uuid(),topic-1-uuid-placeholder,mehmet_k-uuid-placeholder,"I applied last year and it took about 3 months. Make sure your degree is recognized first.",2025-12-11 10:00:00+00
+gen_random_uuid(),topic-1-uuid-placeholder,ayse_d-uuid-placeholder,"The Anabin database is your best friend for checking degree recognition before applying.",2025-12-11 14:00:00+00
+gen_random_uuid(),topic-5-uuid-placeholder,admin-uuid-placeholder,"There is a great Turkish cultural festival in Frankfurt every summer worth checking out.",2025-12-12 09:00:00+00
+gen_random_uuid(),topic-6-uuid-placeholder,ayse_d-uuid-placeholder,"Register on the USCIS portal as early as possible and double check all documents.",2025-12-10 11:00:00+00
+gen_random_uuid(),topic-6-uuid-placeholder,mehmet_k-uuid-placeholder,"I went through this last year. Happy to answer questions about the process.",2025-12-10 15:00:00+00

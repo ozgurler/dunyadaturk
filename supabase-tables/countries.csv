@@ -1,0 +1,51 @@
+id,name,flag_emoji,active,sort_order
+germany,Germany,🇩🇪,true,1
+united-states,United States,🇺🇸,true,2
+united-kingdom,United Kingdom,🇬🇧,true,3
+france,France,🇫🇷,true,4
+netherlands,Netherlands,🇳🇱,true,5
+austria,Austria,🇦🇹,true,6
+belgium,Belgium,🇧🇪,true,7
+switzerland,Switzerland,🇨🇭,true,8
+sweden,Sweden,🇸🇪,true,9
+australia,Australia,🇦🇺,true,10
+canada,Canada,🇨🇦,true,11
+denmark,Denmark,🇩🇰,true,12
+norway,Norway,🇳🇴,true,13
+saudi-arabia,Saudi Arabia,🇸🇦,true,14
+uae,UAE,🇦🇪,true,15
+qatar,Qatar,🇶🇦,true,16
+kuwait,Kuwait,🇰🇼,true,17
+bahrain,Bahrain,🇧🇭,true,18
+oman,Oman,🇴🇲,true,19
+jordan,Jordan,🇯🇴,true,20
+egypt,Egypt,🇪🇬,true,21
+algeria,Algeria,🇩🇿,true,22
+tunisia,Tunisia,🇹🇳,true,23
+morocco,Morocco,🇲🇦,true,24
+libya,Libya,🇱🇾,true,25
+spain,Spain,🇪🇸,true,26
+italy,Italy,🇮🇹,true,27
+greece,Greece,🇬🇷,true,28
+hungary,Hungary,🇭🇺,true,29
+czech-republic,Czech Republic,🇨🇿,true,30
+poland,Poland,🇵🇱,true,31
+romania,Romania,🇷🇴,true,32
+bulgaria,Bulgaria,🇧🇬,true,33
+russia,Russia,🇷🇺,true,34
+kazakhstan,Kazakhstan,🇰🇿,true,35
+azerbaijan,Azerbaijan,🇦🇿,true,36
+uzbekistan,Uzbekistan,🇺🇿,true,37
+georgia,Georgia,🇬🇪,true,38
+ukraine,Ukraine,🇺🇦,true,39
+new-zealand,New Zealand,🇳🇿,true,40
+brazil,Brazil,🇧🇷,true,41
+argentina,Argentina,🇦🇷,true,42
+japan,Japan,🇯🇵,true,43
+south-korea,South Korea,🇰🇷,true,44
+singapore,Singapore,🇸🇬,true,45
+malaysia,Malaysia,🇲🇾,true,46
+indonesia,Indonesia,🇮🇩,true,47
+south-africa,South Africa,🇿🇦,true,48
+israel,Israel,🇮🇱,true,49
+cyprus,Cyprus,🇨🇾,true,50
