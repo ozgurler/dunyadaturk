@@ -477,15 +477,33 @@ export default function App() {
 
   const fetchTopics = async(country,category)=>{
     setLoading(true);
-    const {data,error}=await supabase.from("topics").select("*, profiles(username)").eq("country",country).eq("category",category).order("pinned",{ascending:false}).order("created_at",{ascending:false});
-    if(!error) setTopics(data||[]);
+    // Fetch topics (no join — author_id is text, profiles.id is uuid)
+    const {data:topicData,error}=await supabase
+      .from("topics").select("*")
+      .eq("country",country).eq("category",category)
+      .order("pinned",{ascending:false}).order("created_at",{ascending:false});
+    if(error){console.error("fetchTopics error:",error);setLoading(false);return;}
+    // Fetch all profiles to map usernames
+    const {data:profileData}=await supabase.from("profiles").select("id,username");
+    const usernameMap={};
+    (profileData||[]).forEach(p=>{usernameMap[p.id]=p.username;});
+    const merged=(topicData||[]).map(t=>({...t,profiles:{username:usernameMap[t.author_id]||"user"}}));
+    setTopics(merged);
     setLoading(false);
   };
 
   const fetchReplies = async(topicId)=>{
     setLoading(true);
-    const {data,error}=await supabase.from("replies").select("*, profiles(username)").eq("topic_id",topicId).order("created_at",{ascending:true});
-    if(!error) setReplies(data||[]);
+    // Fetch replies (no join — author_id is text, profiles.id is uuid)
+    const {data:replyData,error}=await supabase
+      .from("replies").select("*")
+      .eq("topic_id",topicId).order("created_at",{ascending:true});
+    if(error){console.error("fetchReplies error:",error);setLoading(false);return;}
+    const {data:profileData}=await supabase.from("profiles").select("id,username");
+    const usernameMap={};
+    (profileData||[]).forEach(p=>{usernameMap[p.id]=p.username;});
+    const merged=(replyData||[]).map(r=>({...r,profiles:{username:usernameMap[r.author_id]||"user"}}));
+    setReplies(merged);
     setLoading(false);
   };
 
@@ -563,7 +581,7 @@ export default function App() {
 
   const handleNewTopic=async()=>{
     if(!newTopicTitle.trim())return;
-    const {error}=await supabase.from("topics").insert({title:newTopicTitle,title_tr:newTopicTitle,content:newTopicContent,author_id:user.id,country:selectedCountry,category:selectedCategory.id,pinned:false,views:0});
+    const {error}=await supabase.from("topics").insert({title:newTopicTitle,title_tr:newTopicTitle,content:newTopicContent,author_id:String(user.id),country:selectedCountry,category:selectedCategory.id,pinned:false,views:0});
     if(error){showToast(error.message,"error");return;}
     setNewTopicTitle(""); setNewTopicContent(""); setModal(null);
     showToast("Topic created!");
@@ -604,7 +622,7 @@ export default function App() {
 
   const handleNewReply=async()=>{
     if(!newReplyContent.trim())return;
-    const {error}=await supabase.from("replies").insert({topic_id:selectedTopic.id,author_id:user.id,content:newReplyContent});
+    const {error}=await supabase.from("replies").insert({topic_id:selectedTopic.id,author_id:String(user.id),content:newReplyContent});
     if(error){showToast(error.message,"error");return;}
     await supabase.from("topics").update({replies:(selectedTopic.replies||0)+1}).eq("id",selectedTopic.id);
     setNewReplyContent(""); showToast("Reply posted!");
@@ -1038,7 +1056,7 @@ function CountryPage({country,countryDisplayName,t,lang,S,COLORS,CATEGORIES,FLAG
   const [counts,setCounts]=useState({});
   const [lastPosts,setLastPosts]=useState({});
   useEffect(()=>{
-    supabase.from("topics").select("category,title,title_tr,created_at").eq("country",country).order("created_at",{ascending:false}).then(({data})=>{
+    supabase.from("topics").select("category,title,title_tr,created_at,author_id").eq("country",country).order("created_at",{ascending:false}).then(({data})=>{
       const c={},lp={};
       (data||[]).forEach(r=>{c[r.category]=(c[r.category]||0)+1;if(!lp[r.category])lp[r.category]=r;});
       setCounts(c);setLastPosts(lp);
@@ -1088,11 +1106,15 @@ function AdminPostsTab({supabase,S,COLORS,COUNTRIES,CATEGORIES,FLAGS,t,onEdit,on
 
   const load=async()=>{
     setLoading(true);
-    let q=supabase.from("topics").select("*, profiles(username)").order("created_at",{ascending:false}).limit(100);
+    let q=supabase.from("topics").select("*").order("created_at",{ascending:false}).limit(100);
     if(filterCountry) q=q.eq("country",filterCountry);
     if(filterCategory) q=q.eq("category",filterCategory);
-    const {data}=await q;
-    setPosts(data||[]);
+    const {data:topicData}=await q;
+    const {data:profileData}=await supabase.from("profiles").select("id,username");
+    const usernameMap={};
+    (profileData||[]).forEach(p=>{usernameMap[p.id]=p.username;});
+    const merged=(topicData||[]).map(t=>({...t,profiles:{username:usernameMap[t.author_id]||"user"}}));
+    setPosts(merged);
     setLoading(false);
   };
 
