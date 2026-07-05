@@ -486,8 +486,11 @@ export default function App() {
     // Fetch all profiles to map usernames
     const {data:profileData}=await supabase.from("profiles").select("id,username");
     const usernameMap={};
-    (profileData||[]).forEach(p=>{usernameMap[p.id]=p.username;});
-    const merged=(topicData||[]).map(t=>({...t,profiles:{username:usernameMap[t.author_id]||"user"}}));
+    (profileData||[]).forEach(p=>{
+      usernameMap[p.id]=p.username;           // uuid key
+      usernameMap[String(p.id)]=p.username;   // string key (matches stored author_id)
+    });
+    const merged=(topicData||[]).map(t=>({...t,profiles:{username:usernameMap[t.author_id]||usernameMap[String(t.author_id)]||"user"}}));
     setTopics(merged);
     setLoading(false);
   };
@@ -501,8 +504,11 @@ export default function App() {
     if(error){console.error("fetchReplies error:",error);setLoading(false);return;}
     const {data:profileData}=await supabase.from("profiles").select("id,username");
     const usernameMap={};
-    (profileData||[]).forEach(p=>{usernameMap[p.id]=p.username;});
-    const merged=(replyData||[]).map(r=>({...r,profiles:{username:usernameMap[r.author_id]||"user"}}));
+    (profileData||[]).forEach(p=>{
+      usernameMap[p.id]=p.username;
+      usernameMap[String(p.id)]=p.username;
+    });
+    const merged=(replyData||[]).map(r=>({...r,profiles:{username:usernameMap[r.author_id]||usernameMap[String(r.author_id)]||"user"}}));
     setReplies(merged);
     setLoading(false);
   };
@@ -699,7 +705,14 @@ export default function App() {
           {isAdmin&&<button style={S.btn("ghost","sm")} onClick={()=>{setView("admin");fetchAllUsers();fetchStats();}}>⚙️ {t.admin}</button>}
           {user?(
             <>
-              <span style={{color:"rgba(255,255,255,0.9)",fontSize:13,fontWeight:600}}>👤 {profile?.username||user.email}</span>
+              <span style={{color:"rgba(255,255,255,0.9)",fontSize:13,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+                <span style={{width:28,height:28,borderRadius:"50%",background:"rgba(255,255,255,0.25)",display:"inline-flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:13,flexShrink:0}}>
+                  {(profile?.username||user.email||"U")[0].toUpperCase()}
+                </span>
+                <span style={{maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {profile?.username||user.email?.split("@")[0]||"User"}
+                </span>
+              </span>
               <button style={S.btn("ghost","sm")} onClick={handleLogout}>{t.logout}</button>
             </>
           ):(
@@ -1112,8 +1125,11 @@ function AdminPostsTab({supabase,S,COLORS,COUNTRIES,CATEGORIES,FLAGS,t,onEdit,on
     const {data:topicData}=await q;
     const {data:profileData}=await supabase.from("profiles").select("id,username");
     const usernameMap={};
-    (profileData||[]).forEach(p=>{usernameMap[p.id]=p.username;});
-    const merged=(topicData||[]).map(t=>({...t,profiles:{username:usernameMap[t.author_id]||"user"}}));
+    (profileData||[]).forEach(p=>{
+      usernameMap[p.id]=p.username;           // uuid key
+      usernameMap[String(p.id)]=p.username;   // string key (matches stored author_id)
+    });
+    const merged=(topicData||[]).map(t=>({...t,profiles:{username:usernameMap[t.author_id]||usernameMap[String(t.author_id)]||"user"}}));
     setPosts(merged);
     setLoading(false);
   };
