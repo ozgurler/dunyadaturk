@@ -409,7 +409,7 @@ function RichContent({ html }) {
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState("tr");
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [view, setView] = useState("home");
@@ -433,6 +433,13 @@ export default function App() {
   const [regForm, setRegForm] = useState({username:"",email:"",password:"",confirm:""});
   const [countrySearch, setCountrySearch] = useState("");
   const [hiddenCountries, setHiddenCountries] = useState([]);
+
+  // Guards for the browser-history sync effects below
+  const isPopping = useRef(false);   // true while restoring from back/forward
+  const isFirstNav = useRef(true);   // first render replaces instead of pushes
+  // Captured during render, before any effect can rewrite the address bar,
+  // so a shared link like /?c=Germany&cat=visa still resolves correctly.
+  const initialSearch = useRef(typeof window!=="undefined" ? window.location.search : "");
 
   const t = i18n[lang];
 
@@ -664,8 +671,11 @@ export default function App() {
   const isAdmin = profile?.role==="admin";
   const getTopicTitle = (topic)=>lang==="tr"&&topic.title_tr?topic.title_tr:topic.title;
 
-  // Filter countries by search — in current language
-  const visibleCountries = COUNTRIES.filter(c=>!hiddenCountries.includes(c.en));
+  // Sort countries alphabetically in the ACTIVE language, then filter
+  const sortedCountries = [...COUNTRIES].sort((a,b)=>
+    lang==="tr" ? a.tr.localeCompare(b.tr,"tr") : a.en.localeCompare(b.en,"en")
+  );
+  const visibleCountries = sortedCountries.filter(c=>!hiddenCountries.includes(c.en));
   const filteredCountries = visibleCountries.filter(c=>{
     const q = countrySearch.toLowerCase();
     return !q || c.en.toLowerCase().includes(q) || c.tr.toLowerCase().includes(q);
@@ -679,6 +689,108 @@ export default function App() {
   const goHome=()=>{setView("home");setSelectedCountry(null);setSelectedCategory(null);setSelectedTopic(null);fetchStats();};
   const goCountry=()=>{setView("country");setSelectedCategory(null);setSelectedTopic(null);};
   const goCategory=()=>{setView("category");setSelectedTopic(null);};
+
+  // ── BROWSER HISTORY (back / forward button support) ───────────────────────
+  // Build a shareable URL for the current position in the app.
+  // Query params are used (not path segments) so a refresh still resolves to
+  // index.html on static hosting and doesn't 404.
+  const buildNavUrl = (st) => {
+    const p = new URLSearchParams();
+    if (st.view === "admin") p.set("view", "admin");
+    if (st.country) p.set("c", st.country);
+    if (st.categoryId) p.set("cat", st.categoryId);
+    if (st.topicId) p.set("t", st.topicId);
+    const qs = p.toString();
+    return qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+  };
+
+  // Push a history entry every time the user moves to a new screen.
+  useEffect(()=>{
+    const navState = {
+      view,
+      country: selectedCountry,
+      categoryId: selectedCategory?.id || null,
+      topicId: selectedTopic?.id || null,
+    };
+    // A popstate-driven change must not push a new entry (that would trap the
+    // user: back would just re-add the entry they were trying to leave).
+    if(isPopping.current){ isPopping.current=false; return; }
+    const url = buildNavUrl(navState);
+    if(isFirstNav.current){
+      isFirstNav.current=false;
+      window.history.replaceState(navState, "", url);
+    } else {
+      window.history.pushState(navState, "", url);
+    }
+  },[view, selectedCountry, selectedCategory, selectedTopic]);
+
+  // Restore app state when the user presses back or forward.
+  useEffect(()=>{
+    const onPop = async (e) => {
+      isPopping.current = true;
+      const st = e.state;
+      if(!st){
+        setView("home"); setSelectedCountry(null);
+        setSelectedCategory(null); setSelectedTopic(null);
+        return;
+      }
+      const cat = st.categoryId ? CATEGORIES.find(c=>c.id===st.categoryId) : null;
+      setSelectedCountry(st.country||null);
+      setSelectedCategory(cat);
+      if(st.view==="category" && st.country && st.categoryId){
+        fetchTopics(st.country, st.categoryId);
+        setSelectedTopic(null);
+      }
+      if(st.view==="topic" && st.topicId){
+        const {data}=await supabase.from("topics").select("*").eq("id",st.topicId).single();
+        if(data){
+          const {data:prof}=await supabase.from("profiles").select("id,username");
+          const map={}; (prof||[]).forEach(pr=>{map[pr.id]=pr.username;map[String(pr.id)]=pr.username;});
+          setSelectedTopic({...data,profiles:{username:map[data.author_id]||map[String(data.author_id)]||"user"}});
+          fetchReplies(st.topicId);
+        }
+      }
+      if(st.view!=="topic") setSelectedTopic(null);
+      setView(st.view||"home");
+    };
+    window.addEventListener("popstate", onPop);
+    return ()=>window.removeEventListener("popstate", onPop);
+  },[]);
+
+  // On first load, restore position from the URL so shared links work.
+  useEffect(()=>{
+    const p = new URLSearchParams(initialSearch.current);
+    const c = p.get("c"), catId = p.get("cat"), tId = p.get("t");
+    if(!c && !tId) return;
+    const restore = async () => {
+      isPopping.current = true;
+      if(c) setSelectedCountry(c);
+      if(catId){
+        const cat = CATEGORIES.find(x=>x.id===catId);
+        if(cat){ setSelectedCategory(cat); if(c) fetchTopics(c,catId); }
+      }
+      if(tId){
+        const {data}=await supabase.from("topics").select("*").eq("id",tId).single();
+        if(data){
+          const {data:prof}=await supabase.from("profiles").select("id,username");
+          const map={}; (prof||[]).forEach(pr=>{map[pr.id]=pr.username;map[String(pr.id)]=pr.username;});
+          setSelectedTopic({...data,profiles:{username:map[data.author_id]||map[String(data.author_id)]||"user"}});
+          fetchReplies(tId);
+          setView("topic");
+          window.history.replaceState(
+            {view:"topic",country:c,categoryId:catId,topicId:tId},"",initialSearch.current
+              ? `${window.location.pathname}${initialSearch.current}` : window.location.pathname);
+          return;
+        }
+      }
+      const restoredView = catId ? "category" : "country";
+      setView(restoredView);
+      window.history.replaceState(
+        {view:restoredView,country:c,categoryId:catId,topicId:null},"",
+        `${window.location.pathname}${initialSearch.current}`);
+    };
+    restore();
+  },[]);
 
   // Get Turkish name for a country
   const countryDisplayName = (en) => {
