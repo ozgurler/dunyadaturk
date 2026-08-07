@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vercel/
+
+# Local environment variables
+# Production values live in Vercel > Settings > Environment Variables,
+# so this file is only needed on your own machine.
+.env.local
+.env*.local
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.log

@@ -548,13 +548,13 @@ export default function App() {
     // data.user is available immediately after signUp regardless of confirmation status
     const userId = data?.user?.id || data?.session?.user?.id;
     if(userId){
+      // role / banned / created_at are set by database defaults now.
+      // Sending them here would be rejected: the browser has no write
+      // privilege on those columns.
       const {error:profileError}=await supabase.from("profiles").insert({
         id:userId,
         username:regForm.username.trim(),
         email:regForm.email.trim(),
-        role:"user",
-        banned:false,
-        created_at:new Date().toISOString(),
       });
       if(profileError){
         // If duplicate username, show friendly error
@@ -650,14 +650,22 @@ export default function App() {
 
   const handleBanUser=async(userId,currentBanned)=>{
     if(!currentBanned&&!window.confirm(t.confirmBan))return;
-    await supabase.from("profiles").update({banned:!currentBanned}).eq("id",userId);
+    // Goes through an admin-only database function. The browser can no
+    // longer write the `banned` column directly.
+    const {error}=await supabase.rpc("admin_set_banned",{
+      target_id:userId, is_banned:!currentBanned
+    });
+    if(error){ showToast(error.message,"error"); return; }
     showToast("User status updated."); fetchAllUsers();
   };
 
   const handleToggleAdmin=async(userId,currentRole)=>{
     const newRole=currentRole==="admin"?"user":"admin";
     if(newRole==="admin"&&!window.confirm(t.confirmMakeAdmin))return;
-    await supabase.from("profiles").update({role:newRole}).eq("id",userId);
+    const {error}=await supabase.rpc("admin_set_role",{
+      target_id:userId, new_role:newRole
+    });
+    if(error){ showToast(error.message,"error"); return; }
     showToast("Role updated."); fetchAllUsers();
   };
 
